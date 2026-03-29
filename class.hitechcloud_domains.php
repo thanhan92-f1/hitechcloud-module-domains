@@ -1,9 +1,9 @@
 <?php
 
-class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleListing
+class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.0.0';
+    protected $version = '1.1.0';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -261,6 +261,14 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return $this->toBoolValue($extended['idprotection']);
         }
 
+        $domainId = $this->resolveRemoteDomainId();
+        if ($domainId) {
+            $response = $this->request('GET', '/domain/'.$domainId.'/idprotection');
+            if ($response !== false) {
+                return $this->toBoolValue($this->extractFirstValue($response, ['idprotection', 'privacy', 'status', 'enabled']));
+            }
+        }
+
         return isset($this->details['idprotection']) ? $this->toBoolValue($this->details['idprotection']) : null;
     }
 
@@ -436,6 +444,13 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         return isset($response['domains']) ? $response['domains'] : $response;
     }
 
+    public function testConnection()
+    {
+        $response = $this->request('GET', '/domain', [], [], true);
+
+        return false !== $response;
+    }
+
     public function hideContacts()
     {
         return false;
@@ -444,6 +459,103 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
     public function hideNameServers()
     {
         return false;
+    }
+
+    public function widget_dnssec_form()
+    {
+        $data = $this->widget_dnssec_get();
+
+        return [
+            'fields' => [
+                'action' => [
+                    'type' => 'select',
+                    'label' => 'Action',
+                    'options' => [
+                        'add' => 'Add key',
+                        'delete' => 'Delete key',
+                    ],
+                    'value' => 'add',
+                ],
+                'key' => ['type' => 'text', 'label' => 'Key Tag / Key', 'value' => ''],
+                'flags' => ['type' => 'text', 'label' => 'Flags', 'value' => ''],
+                'alg' => ['type' => 'text', 'label' => 'Algorithm', 'value' => ''],
+                'digest_type' => ['type' => 'text', 'label' => 'Digest Type', 'value' => ''],
+                'digest' => ['type' => 'text', 'label' => 'Digest', 'value' => ''],
+                'pubkey' => ['type' => 'textarea', 'label' => 'Public Key', 'value' => ''],
+                'protocol' => ['type' => 'text', 'label' => 'Protocol', 'value' => '3'],
+            ],
+            'available_flags' => isset($data['available_flags']) ? $data['available_flags'] : [],
+        ];
+    }
+
+    public function widget_dnssec_get()
+    {
+        $domainId = $this->resolveRemoteDomainId();
+        if (!$domainId) {
+            return [];
+        }
+
+        $keysResponse = $this->request('GET', '/domain/'.$domainId.'/dnssec');
+        $flagsResponse = $this->request('GET', '/domain/'.$domainId.'/dnssec/flags');
+
+        return [
+            'keys' => $this->normalizeDnssecList($keysResponse),
+            'available_flags' => $this->normalizeDnssecFlags($flagsResponse),
+        ];
+    }
+
+    public function widget_dnssec_set($data)
+    {
+        $domainId = $this->resolveRemoteDomainId();
+        if (!$domainId) {
+            return false;
+        }
+
+        if (!is_array($data)) {
+            $this->addError('Invalid DNSSEC payload');
+            return false;
+        }
+
+        $action = isset($data['action']) ? strtolower(trim((string) $data['action'])) : 'add';
+        if ('delete' === $action) {
+            $key = '';
+            foreach (['key', 'key_tag', 'keytag', 'id'] as $candidate) {
+                if (!empty($data[$candidate])) {
+                    $key = $data[$candidate];
+                    break;
+                }
+            }
+
+            if ($key === '') {
+                $this->addError('DNSSEC key is required for delete action');
+                return false;
+            }
+
+            return false !== $this->request('DELETE', '/domain/'.$domainId.'/dnssec/'.$this->encodePathSegment($key));
+        }
+
+        $payload = $this->normalizeDnssecPayload($data);
+        if (empty($payload)) {
+            $this->addError('No DNSSEC data to submit');
+            return false;
+        }
+
+        return false !== $this->request('PUT', '/domain/'.$domainId.'/dnssec', $payload);
+    }
+
+    public function getDNSRecordTypes()
+    {
+        $domainId = $this->resolveRemoteDomainId();
+        if (!$domainId) {
+            return false;
+        }
+
+        $response = $this->request('GET', '/domain/'.$domainId.'/dns/types');
+        if ($response === false) {
+            return false;
+        }
+
+        return isset($response['types']) ? $response['types'] : $response;
     }
 
     protected function createDomainOrder($action)
@@ -728,6 +840,26 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return $this->domain_id;
         }
 
+        if (!empty($this->name)) {
+            $response = $this->request('GET', '/domain/name/'.$this->encodePathSegment($this->name));
+            if (is_array($response)) {
+                $details = [];
+                if (isset($response['details']) && is_array($response['details'])) {
+                    $details = $response['details'];
+                } else {
+                    $details = $response;
+                }
+
+                if (isset($details['id']) && !empty($details['id'])) {
+                    return $details['id'];
+                }
+
+                if (isset($details[0]['id']) && !empty($details[0]['id'])) {
+                    return $details[0]['id'];
+                }
+            }
+        }
+
         $domains = $this->ListDomains();
         if (is_array($domains) && !empty($this->name)) {
             foreach ($domains as $domain) {
@@ -828,5 +960,60 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
     protected function encodePathSegment($value)
     {
         return str_replace('%2F', '/', rawurlencode((string) $value));
+    }
+
+    protected function normalizeDnssecPayload(array $data)
+    {
+        $map = [
+            'key' => ['key', 'key_tag', 'keytag', 'id'],
+            'flags' => ['flags', 'flag'],
+            'alg' => ['alg', 'algorithm'],
+            'digest_type' => ['digest_type', 'digesttype', 'd_type'],
+            'digest' => ['digest'],
+            'pubkey' => ['pubkey', 'public_key', 'publickey'],
+            'protocol' => ['protocol'],
+        ];
+
+        $payload = [];
+        foreach ($map as $target => $sources) {
+            foreach ($sources as $source) {
+                if (isset($data[$source]) && $data[$source] !== '') {
+                    $payload[$target] = $data[$source];
+                    break;
+                }
+            }
+        }
+
+        return $payload;
+    }
+
+    protected function normalizeDnssecList($response)
+    {
+        if (!is_array($response)) {
+            return [];
+        }
+
+        foreach (['keys', 'dnssec', 'records', 'items'] as $key) {
+            if (isset($response[$key]) && is_array($response[$key])) {
+                return array_values($response[$key]);
+            }
+        }
+
+        return isset($response[0]) ? array_values($response) : [$response];
+    }
+
+    protected function normalizeDnssecFlags($response)
+    {
+        if (!is_array($response)) {
+            return [];
+        }
+
+        foreach (['flags', 'data', 'items'] as $key) {
+            if (isset($response[$key]) && is_array($response[$key])) {
+                return array_values($response[$key]);
+            }
+        }
+
+        return isset($response[0]) ? array_values($response) : [$response];
     }
 }
