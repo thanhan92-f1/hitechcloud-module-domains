@@ -671,13 +671,25 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
     protected function request($method, $path, array $query = [], array $headers = [], $auth = true)
     {
+        $context = [
+            'method' => strtoupper($method),
+            'path' => $path,
+        ];
+
         $baseUrl = rtrim((string) $this->config('API URL'), '/');
         if ($baseUrl === '') {
             $this->addError('API URL is not configured');
+            $this->logModuleAction('API request failed', false, [
+                ['name' => 'reason', 'from' => '', 'to' => 'API URL is not configured'],
+                ['name' => 'path', 'from' => '', 'to' => $path],
+            ], true);
             return false;
         }
 
         if ($auth && !$this->ensureAuthenticated()) {
+            $this->logModuleAction('API authentication failed', false, [
+                ['name' => 'path', 'from' => '', 'to' => $path],
+            ], true);
             return false;
         }
 
@@ -690,6 +702,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         $ch = curl_init();
         if (false === $ch) {
             $this->addError('Unable to initialize cURL');
+            $this->logModuleFailure('API request failed', $context, 'Unable to initialize cURL');
             return false;
         }
 
@@ -717,8 +730,10 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         $raw = curl_exec($ch);
         if (false === $raw) {
-            $this->addError('HTTP request failed: '.curl_error($ch));
+            $errorMessage = 'HTTP request failed: '.curl_error($ch);
+            $this->addError($errorMessage);
             curl_close($ch);
+            $this->logModuleFailure('API request failed', $context, $errorMessage);
             return false;
         }
 
@@ -732,11 +747,13 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         if ($status >= 400) {
             $this->handleApiFailure($response, 'HTTP '.$status.' returned from '.$path);
+            $this->logModuleFailure('API request failed', $context, 'HTTP '.$status, $response);
             return false;
         }
 
         if (is_array($response) && isset($response['success']) && !$response['success']) {
             $this->handleApiFailure($response, 'API returned unsuccessful response');
+            $this->logModuleFailure('API request failed', $context, 'API returned unsuccessful response', $response);
             return false;
         }
 
@@ -1101,5 +1118,24 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             'change' => $change,
             'error' => $error,
         ]);
+    }
+
+    protected function logModuleFailure($action, array $context, $message, $response = null)
+    {
+        $change = [
+            ['name' => 'method', 'from' => '', 'to' => isset($context['method']) ? $context['method'] : ''],
+            ['name' => 'path', 'from' => '', 'to' => isset($context['path']) ? $context['path'] : ''],
+            ['name' => 'message', 'from' => '', 'to' => (string) $message],
+        ];
+
+        if (null !== $response) {
+            $change[] = [
+                'name' => 'response',
+                'from' => '',
+                'to' => is_array($response) ? json_encode($response) : (string) $response,
+            ];
+        }
+
+        $this->logModuleAction($action, false, $change, true);
     }
 }

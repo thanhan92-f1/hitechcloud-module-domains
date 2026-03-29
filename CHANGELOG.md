@@ -2,6 +2,17 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.2.0] - 2026-03-29
+
+### Added
+- Added persistent runtime/storage helper for resolved `remote_domain_id`
+- Added structured success logging helper for common management actions
+
+### Changed
+- Improved remote domain ID resolution to persist resolved values into `extended`
+- Added action logging for nameserver, lock, privacy, contact, autorenew, email forwarding, DNS, and DNSSEC updates
+- Updated module version from `1.1.0` to `1.2.0`
+
 ## [1.1.0] - 2026-03-29
 
 ### Added
