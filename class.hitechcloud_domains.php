@@ -3,7 +3,7 @@
 class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.1.0';
+    protected $version = '1.2.0';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -198,6 +198,12 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             'nameservers' => implode(',', $nameservers)
         ]);
 
+        if (false !== $response) {
+            $this->logModuleAction('Update nameservers', true, [
+                ['name' => 'nameservers', 'from' => '', 'to' => implode(', ', $nameservers)],
+            ]);
+        }
+
         return false !== $response;
     }
 
@@ -251,6 +257,12 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             'switch' => $switch ? 'true' : 'false'
         ]);
 
+        if (false !== $response) {
+            $this->logModuleAction('Update registrar lock', true, [
+                ['name' => 'lock', 'from' => '', 'to' => $switch ? 'true' : 'false'],
+            ]);
+        }
+
         return false !== $response;
     }
 
@@ -283,6 +295,12 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         $response = $this->request('PUT', '/domain/'.$domainId.'/idprotection', [
             'switch' => $switch ? 'true' : 'false'
         ]);
+
+        if (false !== $response) {
+            $this->logModuleAction('Update ID protection', true, [
+                ['name' => 'idprotection', 'from' => '', 'to' => $switch ? 'true' : 'false'],
+            ]);
+        }
 
         return false !== $response;
     }
@@ -318,6 +336,10 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         ];
         $response = $this->request('PUT', '/domain/'.$domainId.'/contact', $payload);
 
+        if (false !== $response) {
+            $this->logModuleAction('Update contact info', true);
+        }
+
         return false !== $response;
     }
 
@@ -348,6 +370,12 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             'autorenew' => $switch ? 'true' : 'false'
         ]);
 
+        if (false !== $response) {
+            $this->logModuleAction('Update registry autorenew', true, [
+                ['name' => 'autorenew', 'from' => '', 'to' => $switch ? 'true' : 'false'],
+            ]);
+        }
+
         return false !== $response;
     }
 
@@ -377,6 +405,10 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         $response = $this->request('PUT', '/domain/'.$domainId.'/emforwarding', $payload);
+
+        if (false !== $response) {
+            $this->logModuleAction('Update email forwarding', true);
+        }
 
         return false !== $response;
     }
@@ -430,6 +462,13 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         $response = $this->request($method, $path, $query);
+
+        if (false !== $response) {
+            $this->logModuleAction('Update DNS management', true, [
+                ['name' => 'method', 'from' => '', 'to' => $method],
+                ['name' => 'path', 'from' => '', 'to' => $path],
+            ]);
+        }
 
         return false !== $response;
     }
@@ -531,7 +570,14 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
                 return false;
             }
 
-            return false !== $this->request('DELETE', '/domain/'.$domainId.'/dnssec/'.$this->encodePathSegment($key));
+            $response = $this->request('DELETE', '/domain/'.$domainId.'/dnssec/'.$this->encodePathSegment($key));
+            if (false !== $response) {
+                $this->logModuleAction('Delete DNSSEC key', true, [
+                    ['name' => 'key', 'from' => '', 'to' => (string) $key],
+                ]);
+            }
+
+            return false !== $response;
         }
 
         $payload = $this->normalizeDnssecPayload($data);
@@ -540,7 +586,12 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return false;
         }
 
-        return false !== $this->request('PUT', '/domain/'.$domainId.'/dnssec', $payload);
+        $response = $this->request('PUT', '/domain/'.$domainId.'/dnssec', $payload);
+        if (false !== $response) {
+            $this->logModuleAction('Add DNSSEC key', true);
+        }
+
+        return false !== $response;
     }
 
     public function getDNSRecordTypes()
@@ -851,11 +902,11 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
                 }
 
                 if (isset($details['id']) && !empty($details['id'])) {
-                    return $details['id'];
+                    return $this->rememberRemoteDomainId($details['id'], 'domain_name_lookup');
                 }
 
                 if (isset($details[0]['id']) && !empty($details[0]['id'])) {
-                    return $details[0]['id'];
+                    return $this->rememberRemoteDomainId($details[0]['id'], 'domain_name_lookup_list');
                 }
             }
         }
@@ -864,7 +915,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         if (is_array($domains) && !empty($this->name)) {
             foreach ($domains as $domain) {
                 if (isset($domain['name']) && 0 === strcasecmp($domain['name'], $this->name) && !empty($domain['id'])) {
-                    return $domain['id'];
+                    return $this->rememberRemoteDomainId($domain['id'], 'domain_list');
                 }
             }
         }
@@ -1015,5 +1066,40 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return isset($response[0]) ? array_values($response) : [$response];
+    }
+
+    protected function rememberRemoteDomainId($remoteDomainId, $source = '')
+    {
+        $remoteDomainId = trim((string) $remoteDomainId);
+        if ($remoteDomainId === '') {
+            return false;
+        }
+
+        $this->options['remote_domain_id'] = $remoteDomainId;
+        if (!isset($this->details['extended']) || !is_array($this->details['extended'])) {
+            $this->details['extended'] = [];
+        }
+
+        $current = isset($this->details['extended']['remote_domain_id']) ? (string) $this->details['extended']['remote_domain_id'] : '';
+        $this->details['extended']['remote_domain_id'] = $remoteDomainId;
+        if ($source !== '') {
+            $this->details['extended']['remote_domain_id_source'] = $source;
+        }
+
+        if ($this->domain_id && $current !== $remoteDomainId) {
+            $this->updateExtended($this->details['extended'], 'Persist remote domain id');
+        }
+
+        return $remoteDomainId;
+    }
+
+    protected function logModuleAction($action, $result, array $change = [], $error = false)
+    {
+        $this->logAction([
+            'action' => $action,
+            'result' => (bool) $result,
+            'change' => $change,
+            'error' => $error,
+        ]);
     }
 }
