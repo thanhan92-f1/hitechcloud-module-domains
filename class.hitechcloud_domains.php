@@ -68,6 +68,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         ]
     ];
     protected $tokenCache = [];
+    protected $domainCache = [];
 
     public function Register()
     {
@@ -287,7 +288,10 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         $domainId = $this->resolveRemoteDomainId();
         if ($domainId) {
-            $response = $this->request('GET', '/domain/'.$domainId.'/idprotection');
+            $response = $this->getDomainDetailValue($domainId, 'idprotection');
+            if ($response === null) {
+                $response = $this->request('GET', '/domain/'.$domainId.'/idprotection');
+            }
             if ($response !== false) {
                 return $this->toBoolValue($this->extractFirstValue($response, ['idprotection', 'privacy', 'status', 'enabled']));
             }
@@ -944,7 +948,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         if (!empty($this->name)) {
-            $response = $this->request('GET', '/domain/name/'.$this->encodePathSegment($this->name));
+            $response = $this->getDomainDetailsByName($this->name);
             if (is_array($response)) {
                 $details = [];
                 if (isset($response['details']) && is_array($response['details'])) {
@@ -1118,6 +1122,99 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return isset($response[0]) ? array_values($response) : [$response];
+    }
+
+    protected function getDomainDetailsByName($name)
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return false;
+        }
+
+        if (isset($this->domainCache['by_name'][$name])) {
+            return $this->domainCache['by_name'][$name];
+        }
+
+        $response = $this->request('GET', '/domain/name/'.$this->encodePathSegment($name));
+        if ($response !== false) {
+            $this->domainCache['by_name'][$name] = $response;
+            $this->cacheDomainDetailsFromResponse($response);
+        }
+
+        return $response;
+    }
+
+    protected function getDomainDetailsById($domainId)
+    {
+        $domainId = trim((string) $domainId);
+        if ($domainId === '') {
+            return false;
+        }
+
+        if (isset($this->domainCache['by_id'][$domainId])) {
+            return $this->domainCache['by_id'][$domainId];
+        }
+
+        $response = $this->request('GET', '/domain/'.$domainId);
+        if ($response !== false) {
+            $this->domainCache['by_id'][$domainId] = $response;
+            $this->cacheDomainDetailsFromResponse($response);
+        }
+
+        return $response;
+    }
+
+    protected function getDomainDetailValue($domainId, $field)
+    {
+        $details = $this->getDomainDetailsById($domainId);
+        if (!is_array($details)) {
+            return null;
+        }
+
+        $candidate = $details;
+        if (isset($details['details']) && is_array($details['details'])) {
+            $candidate = $details['details'];
+        }
+
+        if (isset($candidate[$field])) {
+            return [$field => $candidate[$field]];
+        }
+
+        return null;
+    }
+
+    protected function cacheDomainDetailsFromResponse($response)
+    {
+        if (!is_array($response)) {
+            return;
+        }
+
+        $entries = [];
+        if (isset($response['details']) && is_array($response['details'])) {
+            if (isset($response['details'][0]) && is_array($response['details'][0])) {
+                $entries = $response['details'];
+            } else {
+                $entries = [$response['details']];
+            }
+        } elseif (isset($response[0]) && is_array($response[0])) {
+            $entries = $response;
+        } elseif (isset($response['id']) || isset($response['name'])) {
+            $entries = [$response];
+        }
+
+        foreach ($entries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            if (!empty($entry['id'])) {
+                $this->domainCache['by_id'][(string) $entry['id']] = $entry;
+            }
+
+            if (!empty($entry['name'])) {
+                $this->domainCache['by_name'][(string) $entry['name']] = $entry;
+            }
+        }
     }
 
     protected function rememberRemoteDomainId($remoteDomainId, $source = '')
