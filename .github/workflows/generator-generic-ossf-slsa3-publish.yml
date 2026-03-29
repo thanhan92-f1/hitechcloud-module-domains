@@ -5,6 +5,9 @@ on:
   release:
     types:
       - published
+  push:
+    tags:
+      - 'v*'
 
 permissions: read-all
 

@@ -4,6 +4,47 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 
 > Note: The available API appears to be more of a **user/client-facing API** than a pure registrar backend API. Because of that, some operations such as registration, transfer, and renewal are implemented in a **best-effort** way through order/user endpoints.
 
+## CI/CD and Security
+
+### Badges
+
+[![Symfony](https://github.com/OWNER/REPO/actions/workflows/symfony.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/symfony.yml)
+[![CodeQL](https://github.com/OWNER/REPO/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/codeql.yml)
+[![Dependency Review](https://github.com/OWNER/REPO/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/dependency-review.yml)
+[![API Security](https://github.com/OWNER/REPO/actions/workflows/apisec-scan.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/apisec-scan.yml)
+[![Black Duck](https://github.com/OWNER/REPO/actions/workflows/black-duck-security-scan-ci.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/black-duck-security-scan-ci.yml)
+[![Checkmarx One](https://github.com/OWNER/REPO/actions/workflows/checkmarx-one.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/checkmarx-one.yml)
+[![SLSA Provenance](https://github.com/OWNER/REPO/actions/workflows/generator-generic-ossf-slsa3-publish.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/generator-generic-ossf-slsa3-publish.yml)
+
+> Replace `OWNER/REPO` with the actual GitHub repository path before publishing the documentation.
+
+### Included workflows
+
+- `symfony.yml`: runs PHP syntax checks, composer validation, Symfony console checks, and PHPUnit when available
+- `codeql.yml`: runs CodeQL analysis for PHP
+- `dependency-review.yml`: reviews dependency changes on pull requests
+- `apisec-scan.yml`: runs API security audit when an OpenAPI spec is available
+- `black-duck-security-scan-ci.yml`: runs OSS/dependency scanning through Black Duck
+- `checkmarx-one.yml`: runs SAST/SCA scanning through Checkmarx One
+- `generator-generic-ossf-slsa3-publish.yml`: generates OSSF SLSA level 3 provenance on release/tag events
+
+### Configured triggers
+
+- primary branch: `main`
+- release tag pattern: `v*`
+- pull request target: `main`
+
+### Required GitHub secrets
+
+- `FORTYTWOCRUNCH_API_TOKEN`
+- `FORTYTWOCRUNCH_PLATFORM_URL`
+- `BLACKDUCK_URL`
+- `BLACKDUCK_API_TOKEN`
+- `CX_BASE_URI`
+- `CX_TENANT`
+- `CX_CLIENT_ID`
+- `CX_CLIENT_SECRET`
+
 ## Included Documentation
 
 - `README.md`: Vietnamese documentation

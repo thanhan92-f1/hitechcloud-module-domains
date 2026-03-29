@@ -4,6 +4,47 @@ Module domain cho HostBill, tích hợp với **HiTechCloud User API** dựa tr�
 
 > Lưu ý: API hiện có dấu hiệu là **User API / client-facing API** của HostBill hơn là registrar backend API thuần. Vì vậy một số chức năng như đăng ký, transfer, renew đang được triển khai theo hướng **best-effort** qua order/user endpoints.
 
+## CI/CD và Security
+
+### Badges
+
+[![Symfony](https://github.com/OWNER/REPO/actions/workflows/symfony.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/symfony.yml)
+[![CodeQL](https://github.com/OWNER/REPO/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/codeql.yml)
+[![Dependency Review](https://github.com/OWNER/REPO/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/dependency-review.yml)
+[![API Security](https://github.com/OWNER/REPO/actions/workflows/apisec-scan.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/apisec-scan.yml)
+[![Black Duck](https://github.com/OWNER/REPO/actions/workflows/black-duck-security-scan-ci.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/black-duck-security-scan-ci.yml)
+[![Checkmarx One](https://github.com/OWNER/REPO/actions/workflows/checkmarx-one.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/checkmarx-one.yml)
+[![SLSA Provenance](https://github.com/OWNER/REPO/actions/workflows/generator-generic-ossf-slsa3-publish.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/generator-generic-ossf-slsa3-publish.yml)
+
+> Thay `OWNER/REPO` bằng repository GitHub thực tế trước khi public tài liệu.
+
+### Workflows hiện có
+
+- `symfony.yml`: kiểm tra PHP syntax, composer, Symfony console, PHPUnit nếu khả dụng
+- `codeql.yml`: quét CodeQL cho PHP
+- `dependency-review.yml`: kiểm tra dependency thay đổi trên pull request
+- `apisec-scan.yml`: quét bảo mật API nếu có OpenAPI spec
+- `black-duck-security-scan-ci.yml`: quét OSS/dependency qua Black Duck
+- `checkmarx-one.yml`: quét SAST/SCA qua Checkmarx One
+- `generator-generic-ossf-slsa3-publish.yml`: tạo provenance theo OSSF SLSA level 3 khi release/tag
+
+### Trigger thực tế đã cấu hình
+
+- branch chính: `main`
+- release tag pattern: `v*`
+- PR target: `main`
+
+### Secrets cần cấu hình trên GitHub
+
+- `FORTYTWOCRUNCH_API_TOKEN`
+- `FORTYTWOCRUNCH_PLATFORM_URL`
+- `BLACKDUCK_URL`
+- `BLACKDUCK_API_TOKEN`
+- `CX_BASE_URI`
+- `CX_TENANT`
+- `CX_CLIENT_ID`
+- `CX_CLIENT_SECRET`
+
 ## Tài liệu đi kèm
 
 - `README.en.md`: tài liệu tiếng Anh
