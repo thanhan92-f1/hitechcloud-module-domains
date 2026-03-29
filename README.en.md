@@ -9,6 +9,7 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 - `README.md`: Vietnamese documentation
 - `ADMIN-GUIDE.md`: admin configuration guide
 - `DEPLOYMENT-CHECKLIST.md`: deployment checklist
+- `EXAMPLES.md`: usage and payload examples
 - `CHANGELOG.md`: change history
 - `LICENSE`: copyright / usage information
 

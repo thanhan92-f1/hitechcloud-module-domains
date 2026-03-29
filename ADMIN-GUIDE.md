@@ -148,3 +148,12 @@ Nên test theo thứ tự:
 - Chưa có import giá domain
 - DNSSEC đang ở mức best-effort theo schema Postman hiện có
 - Register/Transfer/Renew vẫn phụ thuộc user/order API
+
+## 9. Tài liệu liên quan
+
+- `README.md`: tổng quan tiếng Việt
+- `README.en.md`: tổng quan tiếng Anh
+- `DEPLOYMENT-CHECKLIST.md`: checklist triển khai
+- `EXAMPLES.md`: ví dụ payload và flow xử lý
+- `CHANGELOG.md`: lịch sử thay đổi
+- `LICENSE`: license nội bộ của công ty
