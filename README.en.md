@@ -67,10 +67,13 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
   - `getDNSmanagement()`
   - `updateDNSManagement()`
   - `getDNSRecordTypes()`
+  - best-effort normalizes common record fields such as `id`, `name`, `type`, `content`, `priority`, and `ttl`
+  - record types are normalized into a sorted unique list
 - DNSSEC:
   - `widget_dnssec_form()`
   - `widget_dnssec_get()`
   - `widget_dnssec_set($data)`
+  - best-effort normalizes key/flag entries and also returns `key_count`
 - Domain listing:
   - `ListDomains()`
   - additionally normalizes common fields such as `name`, `status`, `expires`, and `autorenew` when the API uses alternate keys

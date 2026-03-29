@@ -235,6 +235,7 @@ Ngoài normalize cho pricing và list domains, module hiện còn chuẩn hóa b
 - update record
 - delete record
 - get supported record types
+- normalize DNS records và record types theo schema gần với HostBill hơn
 
 ### DNSSEC
 - lấy danh sách keys
@@ -242,6 +243,7 @@ Ngoài normalize cho pricing và list domains, module hiện còn chuẩn hóa b
 - thêm key
 - xóa key
 - normalize payload/response theo kiểu best-effort
+- tổng hợp thêm `key_count` cho UI/diagnostics
 
 ## 11. Điểm mở rộng phù hợp
 

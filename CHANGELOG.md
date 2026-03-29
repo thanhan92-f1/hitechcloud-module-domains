@@ -2,6 +2,19 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.6.5] - 2026-03-29
+
+### Added
+- Added best-effort DNS record normalization across common alternate field names
+- Added DNS record type normalization into a unique sorted list
+- Added DNSSEC entry normalization and `key_count` summary in `widget_dnssec_get()`
+
+### Changed
+- Improved `getDNSmanagement()` to return more consistent DNS record rows
+- Improved `getDNSRecordTypes()` to return normalized type names from mixed API schemas
+- Improved DNSSEC key/flag normalization for more stable HostBill-side rendering
+- Updated module version from `1.6.4` to `1.6.5`
+
 ## [1.6.4] - 2026-03-29
 
 ### Added

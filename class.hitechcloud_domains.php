@@ -3,7 +3,7 @@
 class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleGluerecords, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing, DomainPriceImport
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.6.4';
+    protected $version = '1.6.5';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -551,11 +551,11 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         foreach (['records', 'dns', 'items', 'data'] as $key) {
             if (isset($response[$key]) && is_array($response[$key])) {
-                return $response[$key];
+                return $this->normalizeDnsRecords($response[$key]);
             }
         }
 
-        return $response;
+        return is_array($response) ? $this->normalizeDnsRecords($response) : $response;
     }
 
     public function updateDNSManagement()
@@ -699,6 +699,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         return [
             'keys' => $this->normalizeDnssecList($keysResponse),
             'available_flags' => $this->normalizeDnssecFlags($flagsResponse),
+            'key_count' => count($this->normalizeDnssecList($keysResponse)),
         ];
     }
 
@@ -769,11 +770,11 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         foreach (['types', 'records', 'items', 'data'] as $key) {
             if (isset($response[$key]) && is_array($response[$key])) {
-                return $response[$key];
+                return $this->normalizeDnsRecordTypes($response[$key]);
             }
         }
 
-        return $response;
+        return $this->normalizeDnsRecordTypes($response);
     }
 
     protected function createDomainOrder($action)
@@ -1276,11 +1277,15 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         foreach (['keys', 'dnssec', 'records', 'items'] as $key) {
             if (isset($response[$key]) && is_array($response[$key])) {
-                return array_values($response[$key]);
+                return array_values(array_map([$this, 'normalizeDnssecEntry'], $response[$key]));
             }
         }
 
-        return isset($response[0]) ? array_values($response) : [$response];
+        if (isset($response[0])) {
+            return array_values(array_map([$this, 'normalizeDnssecEntry'], $response));
+        }
+
+        return [$this->normalizeDnssecEntry($response)];
     }
 
     protected function normalizeDnssecFlags($response)
@@ -1291,11 +1296,153 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         foreach (['flags', 'data', 'items'] as $key) {
             if (isset($response[$key]) && is_array($response[$key])) {
-                return array_values($response[$key]);
+                return $this->normalizeDnssecFlagList($response[$key]);
             }
         }
 
-        return isset($response[0]) ? array_values($response) : [$response];
+        return isset($response[0]) ? $this->normalizeDnssecFlagList($response) : $this->normalizeDnssecFlagList([$response]);
+    }
+
+    protected function normalizeDnssecEntry($entry)
+    {
+        if (!is_array($entry)) {
+            return ['value' => $entry];
+        }
+
+        $normalized = $entry;
+        $mapping = [
+            'key' => ['key', 'key_tag', 'keytag', 'id'],
+            'flags' => ['flags', 'flag'],
+            'alg' => ['alg', 'algorithm'],
+            'digest_type' => ['digest_type', 'digesttype'],
+            'digest' => ['digest'],
+            'pubkey' => ['pubkey', 'public_key', 'publickey'],
+            'protocol' => ['protocol'],
+        ];
+
+        foreach ($mapping as $target => $sources) {
+            if (isset($normalized[$target]) && $normalized[$target] !== '') {
+                continue;
+            }
+
+            $value = $this->extractFirstValue($entry, $sources);
+            if (null !== $value && $value !== '') {
+                $normalized[$target] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    protected function normalizeDnssecFlagList(array $flags)
+    {
+        $result = [];
+        foreach ($flags as $flag) {
+            if (is_array($flag)) {
+                $value = $this->extractFirstValue($flag, ['value', 'flag', 'id', 'code']);
+                $label = $this->extractFirstValue($flag, ['label', 'name', 'description', 'title']);
+                $normalized = $flag;
+                if (null !== $value && !isset($normalized['value'])) {
+                    $normalized['value'] = (string) $value;
+                }
+                if (null !== $label && !isset($normalized['label'])) {
+                    $normalized['label'] = $label;
+                }
+                $result[] = $normalized;
+                continue;
+            }
+
+            $result[] = ['value' => (string) $flag, 'label' => (string) $flag];
+        }
+
+        return array_values($result);
+    }
+
+    protected function normalizeDnsRecords($records)
+    {
+        if (!is_array($records)) {
+            return [];
+        }
+
+        if (isset($records[0]) && is_array($records[0])) {
+            return array_values(array_map([$this, 'normalizeDnsRecord'], $records));
+        }
+
+        if ($this->looksLikeDnsRecord($records)) {
+            return [$this->normalizeDnsRecord($records)];
+        }
+
+        foreach (['records', 'dns', 'items', 'data'] as $key) {
+            if (isset($records[$key]) && is_array($records[$key])) {
+                return $this->normalizeDnsRecords($records[$key]);
+            }
+        }
+
+        return [];
+    }
+
+    protected function normalizeDnsRecord(array $record)
+    {
+        $normalized = $record;
+        $mapping = [
+            'id' => ['id', 'record_id', 'index'],
+            'name' => ['name', 'host', 'subdomain'],
+            'type' => ['type', 'record_type'],
+            'content' => ['content', 'value', 'target', 'address', 'data'],
+            'priority' => ['priority', 'prio', 'distance'],
+            'ttl' => ['ttl'],
+        ];
+
+        foreach ($mapping as $target => $sources) {
+            if (isset($normalized[$target]) && $normalized[$target] !== '') {
+                continue;
+            }
+
+            $value = $this->extractFirstValue($record, $sources);
+            if (null !== $value && $value !== '') {
+                $normalized[$target] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
+    protected function looksLikeDnsRecord(array $record)
+    {
+        foreach (['type', 'record_type', 'content', 'value', 'target', 'address'] as $key) {
+            if (array_key_exists($key, $record)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function normalizeDnsRecordTypes($types)
+    {
+        if (!is_array($types)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($types as $type) {
+            if (is_array($type)) {
+                $value = $this->extractFirstValue($type, ['type', 'value', 'name', 'id']);
+                if (null !== $value && $value !== '') {
+                    $result[] = (string) $value;
+                }
+                continue;
+            }
+
+            if ($type !== '') {
+                $result[] = (string) $type;
+            }
+        }
+
+        $result = array_values(array_unique(array_filter($result)));
+        sort($result, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $result;
     }
 
     protected function normalizeDomainPrices($response)

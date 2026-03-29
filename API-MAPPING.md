@@ -151,6 +151,7 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 
 ### `getDNSmanagement()`
 - endpoint: `GET /domain/:id/dns`
+- normalize best-effort các key record thường gặp như `record_id|index`, `host|subdomain`, `record_type`, `value|target|address`
 
 ### `updateDNSManagement()`
 - create: `POST /domain/:id/dns`
@@ -159,12 +160,14 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 
 ### `getDNSRecordTypes()`
 - endpoint: `GET /domain/:id/dns/types`
+- chuẩn hóa kết quả về danh sách type duy nhất và sắp xếp tự nhiên
 
 ## 11. DNSSEC
 
 ### `widget_dnssec_get()`
 - `GET /domain/:id/dnssec`
 - `GET /domain/:id/dnssec/flags`
+- normalize best-effort key/flag response và trả thêm `key_count`
 
 ### `widget_dnssec_set($data)`
 - add: `PUT /domain/:id/dnssec`

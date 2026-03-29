@@ -239,8 +239,27 @@ Module sẽ thử đọc một trong các key sau từ response:
 ### List records
 - `GET /domain/:id/dns`
 
+### Example normalized result
+```php
+[
+    [
+        'id' => '15',
+        'name' => 'www',
+        'type' => 'A',
+        'content' => '192.168.1.10',
+        'priority' => '',
+        'ttl' => '3600',
+    ],
+]
+```
+
 ### Supported types lookup
 - `GET /domain/:id/dns/types`
+
+### Example normalized types
+```php
+['A', 'AAAA', 'CNAME', 'MX', 'TXT']
+```
 
 ### Create record
 - `POST /domain/:id/dns`
@@ -279,6 +298,28 @@ Example:
 
 ### List flags
 - `GET /domain/:id/dnssec/flags`
+
+### Example normalized get result
+```php
+[
+    'keys' => [
+        [
+            'key' => '12345',
+            'flags' => '257',
+            'alg' => '13',
+            'digest_type' => '2',
+            'digest' => 'ABCDEF1234567890',
+            'pubkey' => 'BASE64PUBLICKEY',
+            'protocol' => '3',
+        ],
+    ],
+    'available_flags' => [
+        ['value' => '256', 'label' => 'ZSK'],
+        ['value' => '257', 'label' => 'KSK'],
+    ],
+    'key_count' => 1,
+]
+```
 
 ### Add key
 - `PUT /domain/:id/dnssec`
