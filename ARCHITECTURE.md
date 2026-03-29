@@ -150,6 +150,32 @@ Thứ tự resolve:
 4. `GET /domain/name/:name`
 5. `GET /domain` rồi dò theo tên domain
 
+## 7.1 Domain details cache
+
+Module hiện có cache in-memory trong vòng đời request PHP:
+- `by_id`
+- `by_name`
+
+Helper liên quan:
+- `getDomainDetailsByName()`
+- `getDomainDetailsById()`
+- `getDomainDetailValue()`
+- `cacheDomainDetailsFromResponse()`
+- `forgetDomainCache()`
+
+Mục đích:
+- giảm gọi lặp lại tới endpoint domain details
+- tái sử dụng dữ liệu đã resolve trước đó
+- tăng hiệu quả cho các flow đọc trạng thái domain
+
+Cache hiện được invalidate sau các thao tác update quan trọng như:
+- nameservers
+- contacts
+- autorenew
+- email forwarding
+- DNS
+- DNSSEC
+
 ## 8. Dữ liệu đầu vào chính
 
 Module đang phụ thuộc vào các nguồn dữ liệu HostBill như:

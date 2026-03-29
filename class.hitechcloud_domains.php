@@ -191,6 +191,11 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return false;
         }
 
+        $cached = $this->getDomainDetailValue($domainId, 'nameservers');
+        if (is_array($cached) && isset($cached['nameservers']) && is_array($cached['nameservers'])) {
+            return $cached['nameservers'];
+        }
+
         $response = $this->request('GET', '/domain/'.$domainId.'/ns');
         if ($response === false) {
             return false;
@@ -212,6 +217,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         ]);
 
         if (false !== $response) {
+            $this->forgetDomainCache($domainId, $this->name);
             $this->logModuleAction('Update nameservers', true, [
                 ['name' => 'nameservers', 'from' => '', 'to' => implode(', ', $nameservers)],
             ]);
@@ -328,6 +334,11 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return false;
         }
 
+        $cached = $this->getDomainDetailValue($domainId, 'contact_info');
+        if (is_array($cached) && isset($cached['contact_info']) && is_array($cached['contact_info'])) {
+            return $cached['contact_info'];
+        }
+
         $response = $this->request('GET', '/domain/'.$domainId.'/contact');
         if ($response === false) {
             return false;
@@ -359,6 +370,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         $response = $this->request('PUT', '/domain/'.$domainId.'/contact', $payload);
 
         if (false !== $response) {
+            $this->forgetDomainCache($domainId, $this->name);
             $this->logModuleAction('Update contact info', true);
         }
 
@@ -370,6 +382,11 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         $domainId = $this->resolveRemoteDomainId();
         if (!$domainId) {
             return false;
+        }
+
+        $cached = $this->getDomainDetailValue($domainId, 'autorenew');
+        if (is_array($cached) && array_key_exists('autorenew', $cached)) {
+            return $this->toBoolValue($cached['autorenew']);
         }
 
         $response = $this->request('GET', '/domain/'.$domainId.'/autorenew');
@@ -393,6 +410,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         ]);
 
         if (false !== $response) {
+            $this->forgetDomainCache($domainId, $this->name);
             $this->logModuleAction('Update registry autorenew', true, [
                 ['name' => 'autorenew', 'from' => '', 'to' => $switch ? 'true' : 'false'],
             ]);
@@ -429,6 +447,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         $response = $this->request('PUT', '/domain/'.$domainId.'/emforwarding', $payload);
 
         if (false !== $response) {
+            $this->forgetDomainCache($domainId, $this->name);
             $this->logModuleAction('Update email forwarding', true);
         }
 
@@ -492,6 +511,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         $response = $this->request($method, $path, $query);
 
         if (false !== $response) {
+            $this->forgetDomainCache($domainId, $this->name);
             $this->logModuleAction('Update DNS management', true, [
                 ['name' => 'method', 'from' => '', 'to' => $method],
                 ['name' => 'path', 'from' => '', 'to' => $path],
@@ -606,6 +626,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
             $response = $this->request('DELETE', '/domain/'.$domainId.'/dnssec/'.$this->encodePathSegment($key));
             if (false !== $response) {
+                $this->forgetDomainCache($domainId, $this->name);
                 $this->logModuleAction('Delete DNSSEC key', true, [
                     ['name' => 'key', 'from' => '', 'to' => (string) $key],
                 ]);
@@ -622,6 +643,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
         $response = $this->request('PUT', '/domain/'.$domainId.'/dnssec', $payload);
         if (false !== $response) {
+            $this->forgetDomainCache($domainId, $this->name);
             $this->logModuleAction('Add DNSSEC key', true);
         }
 
@@ -1214,6 +1236,17 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             if (!empty($entry['name'])) {
                 $this->domainCache['by_name'][(string) $entry['name']] = $entry;
             }
+        }
+    }
+
+    protected function forgetDomainCache($domainId = null, $name = null)
+    {
+        if (null !== $domainId && $domainId !== '') {
+            unset($this->domainCache['by_id'][(string) $domainId]);
+        }
+
+        if (null !== $name && trim((string) $name) !== '') {
+            unset($this->domainCache['by_name'][(string) trim((string) $name)]);
         }
     }
 

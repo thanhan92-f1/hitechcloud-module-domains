@@ -15,6 +15,7 @@ All notable changes to this module should be documented in this file.
 - Added action logging for nameserver, lock, privacy, contact, autorenew, email forwarding, DNS, and DNSSEC updates
 - Improved normalization for contact, DNS, DNS record type, and domain list responses
 - Reused cached domain details for selected lookup flows
+- Added cache invalidation after remote update actions
 - Updated module version from `1.1.0` to `1.2.0`
 
 ## [1.1.0] - 2026-03-29
