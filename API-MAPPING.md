@@ -27,6 +27,15 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 ### `getDomainPrices()`
 - endpoint: `GET /domain/order`
 - dùng để lấy danh sách TLD và periods phục vụ import giá best-effort
+- dữ liệu `GET /domain/order` được cache trong runtime request qua `pricingCache`
+- kết quả normalize thêm:
+  - `available_periods`
+  - `register_periods`
+  - `transfer_periods`
+  - `renew_periods`
+  - `supports_register`
+  - `supports_transfer`
+  - `supports_renew`
 
 ## 3. Lookup / Whois
 
@@ -197,6 +206,11 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
   - `transfer`
   - `renew`
   - `currency`
+- Các kỳ hạn được chuẩn hóa và sắp xếp số học để giảm sai khác khi import vào HostBill
+- Mỗi kỳ hạn có thể kèm cờ:
+  - `register_available`
+  - `transfer_available`
+  - `renew_available`
 - Nếu backend không trả `renew`, giá renew sẽ để `null`
 
 ## 15. Lưu ý

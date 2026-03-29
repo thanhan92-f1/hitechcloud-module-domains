@@ -72,6 +72,8 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
   - `ListDomains()`
 - Domain price import:
   - `getDomainPrices()`
+  - additionally returns `available_periods`, `register_periods`, `transfer_periods`, and `renew_periods`
+  - additionally returns `supports_register`, `supports_transfer`, and `supports_renew` flags
 - Connection test:
   - `testConnection()`
 
@@ -152,6 +154,7 @@ If `Use Bearer Token` is enabled, requests include:
 
 ### Price import
 - `GET /domain/order`
+- The module caches pricing/TLD metadata during the same request lifecycle to avoid repeated API calls
 
 ## Installation
 
@@ -218,6 +221,7 @@ Best-effort supported fields:
 - `hideContacts()` and `hideNameServers()` currently return `false`
 - Glue record support is still not implemented
 - Price import is currently best-effort from the TLD listing returned by `GET /domain/order`
+- `getDomainPrices()` now also normalizes operation-specific available periods so HostBill can map register/transfer/renew pricing more reliably
 
 ## Suggested Next Improvements
 

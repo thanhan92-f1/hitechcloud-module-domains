@@ -2,6 +2,18 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.6.2] - 2026-03-29
+
+### Added
+- Added in-request pricing cache for `GET /domain/order` via `pricingCache`
+- Added normalized pricing summaries: `available_periods`, `register_periods`, `transfer_periods`, `renew_periods`
+- Added per-operation support flags: `supports_register`, `supports_transfer`, `supports_renew`
+
+### Changed
+- Improved `getDomainPrices()` to reuse cached TLD pricing metadata during the same request lifecycle
+- Improved price normalization with sorted numeric periods and per-period availability flags
+- Updated module version from `1.6.0` to `1.6.2`
+
 ## [1.6.1] - 2026-03-29
 
 ### Added

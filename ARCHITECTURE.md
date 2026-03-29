@@ -167,6 +167,9 @@ Module hiện có cache in-memory trong vòng đời request PHP:
 - `by_id`
 - `by_name`
 
+Ngoài ra module còn có:
+- `pricingCache`
+
 Helper liên quan:
 - `getDomainDetailsByName()`
 - `getDomainDetailsById()`
@@ -178,6 +181,7 @@ Mục đích:
 - giảm gọi lặp lại tới endpoint domain details
 - tái sử dụng dữ liệu đã resolve trước đó
 - tăng hiệu quả cho các flow đọc trạng thái domain
+- giảm gọi lặp lại tới `GET /domain/order` khi import hoặc normalize bảng giá
 
 Cache hiện được invalidate sau các thao tác update quan trọng như:
 - nameservers
@@ -240,6 +244,21 @@ Các điểm nên mở rộng tiếp:
 - hỗ trợ glue records nếu có tài liệu API
 - hỗ trợ premium domains
 - hỗ trợ import bảng giá domain
+
+## 11.1 Price import normalization
+
+Flow `getDomainPrices()` hiện:
+- gọi `GET /domain/order` qua helper cache nội bộ
+- chuẩn hóa `tlds[].periods[]` thành các mức giá register/transfer/renew
+- tổng hợp thêm:
+  - `available_periods`
+  - `register_periods`
+  - `transfer_periods`
+  - `renew_periods`
+  - `supports_register`
+  - `supports_transfer`
+  - `supports_renew`
+- sắp xếp kỳ hạn theo thứ tự số học để HostBill import ổn định hơn
 
 ## 12. Rủi ro kiến trúc hiện tại
 

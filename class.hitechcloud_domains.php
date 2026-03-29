@@ -3,7 +3,7 @@
 class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleGluerecords, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing, DomainPriceImport
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.6.0';
+    protected $version = '1.6.2';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -93,6 +93,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
     ];
     protected $tokenCache = [];
     protected $domainCache = [];
+    protected $pricingCache = null;
 
     public function Register()
     {
@@ -614,7 +615,7 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
     public function getDomainPrices()
     {
-        $response = $this->request('GET', '/domain/order');
+        $response = $this->getAvailableTldsData();
         if ($response === false) {
             return false;
         }
@@ -1304,6 +1305,10 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
             $tld = ltrim((string) $tldData['tld'], '.');
             $periods = [];
+            $registerPeriods = [];
+            $transferPeriods = [];
+            $renewPeriods = [];
+            $defaultCurrency = $this->extractFirstValue($tldData, ['currency', 'currency_code']);
             if (isset($tldData['periods']) && is_array($tldData['periods'])) {
                 foreach ($tldData['periods'] as $periodData) {
                     if (!is_array($periodData)) {
@@ -1315,23 +1320,55 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
                         continue;
                     }
 
+                    $registerPrice = $this->normalizePriceValue($this->extractFirstValue($periodData, ['register', 'registration', 'register_price']));
+                    $transferPrice = $this->normalizePriceValue($this->extractFirstValue($periodData, ['transfer', 'transfer_price']));
+                    $renewPrice = $this->normalizePriceValue($this->extractFirstValue($periodData, ['renew', 'renewal', 'renew_price']));
+                    $periodCurrency = $this->extractFirstValue($periodData, ['currency', 'currency_code']);
+                    if (!$defaultCurrency && $periodCurrency) {
+                        $defaultCurrency = $periodCurrency;
+                    }
+
                     $periods[$period] = [
-                        'register' => $this->normalizePriceValue($this->extractFirstValue($periodData, ['register', 'registration', 'register_price'])),
-                        'transfer' => $this->normalizePriceValue($this->extractFirstValue($periodData, ['transfer', 'transfer_price'])),
-                        'renew' => $this->normalizePriceValue($this->extractFirstValue($periodData, ['renew', 'renewal', 'renew_price'])),
-                        'currency' => $this->extractFirstValue($periodData, ['currency', 'currency_code']),
+                        'register' => $registerPrice,
+                        'transfer' => $transferPrice,
+                        'renew' => $renewPrice,
+                        'currency' => $periodCurrency ?: $defaultCurrency,
+                        'register_available' => null !== $registerPrice,
+                        'transfer_available' => null !== $transferPrice,
+                        'renew_available' => null !== $renewPrice,
                     ];
+
+                    if (null !== $registerPrice) {
+                        $registerPeriods[] = (int) $period;
+                    }
+                    if (null !== $transferPrice) {
+                        $transferPeriods[] = (int) $period;
+                    }
+                    if (null !== $renewPrice) {
+                        $renewPeriods[] = (int) $period;
+                    }
                 }
             }
+
+            ksort($periods, SORT_NUMERIC);
 
             $result[$tld] = [
                 'id' => isset($tldData['id']) ? (string) $tldData['id'] : '',
                 'tld' => '.'.$tld,
                 'periods' => $periods,
-                'currency' => $this->extractFirstValue($tldData, ['currency', 'currency_code']),
+                'currency' => $defaultCurrency,
+                'available_periods' => array_keys($periods),
+                'register_periods' => $this->normalizeNumericPeriods($registerPeriods),
+                'transfer_periods' => $this->normalizeNumericPeriods($transferPeriods),
+                'renew_periods' => $this->normalizeNumericPeriods($renewPeriods),
+                'supports_register' => !empty($registerPeriods),
+                'supports_transfer' => !empty($transferPeriods),
+                'supports_renew' => !empty($renewPeriods),
                 'raw' => $tldData,
             ];
         }
+
+        ksort($result, SORT_NATURAL | SORT_FLAG_CASE);
 
         return $result;
     }
@@ -1347,6 +1384,30 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return trim((string) $value);
+    }
+
+    protected function normalizeNumericPeriods(array $periods)
+    {
+        $periods = array_values(array_unique(array_filter(array_map('intval', $periods), function ($value) {
+            return $value > 0;
+        })));
+        sort($periods, SORT_NUMERIC);
+
+        return array_map('strval', $periods);
+    }
+
+    protected function getAvailableTldsData()
+    {
+        if (null !== $this->pricingCache) {
+            return $this->pricingCache;
+        }
+
+        $response = $this->request('GET', '/domain/order');
+        if ($response !== false) {
+            $this->pricingCache = $response;
+        }
+
+        return $response;
     }
 
     protected function unsupportedGlueRecordsAction($action)
