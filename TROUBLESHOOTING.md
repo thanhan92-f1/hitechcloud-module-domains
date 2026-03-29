@@ -225,3 +225,9 @@ Nên sửa code nếu:
 5. So sánh response thật với logic parse hiện tại
 6. Kiểm tra payment method / tld_id / options
 7. Kiểm tra production flow có thực sự provisioning hay không
+
+## 16. Debug snapshot cho staging
+
+- Bật `Debug Snapshots` khi cần xem request/response rút gọn trong log module
+- Dùng `Debug Snapshot Max Length` để giới hạn kích thước dữ liệu log
+- Không nên bật lâu dài trên production vì log có thể tăng nhanh

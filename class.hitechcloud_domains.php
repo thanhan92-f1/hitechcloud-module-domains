@@ -66,6 +66,18 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             'name' => 'Retry Delay',
             'description' => 'Thời gian chờ giữa các lần retry (milliseconds)'
         ],
+        'Debug Snapshots' => [
+            'type' => self::CONFIG_FIELD_CHECK,
+            'value' => false,
+            'name' => 'Debug Snapshots',
+            'description' => 'Ghi log snapshot request/response rút gọn cho debug staging'
+        ],
+        'Debug Snapshot Max Length' => [
+            'type' => self::CONFIG_FIELD_INPUT,
+            'value' => '1500',
+            'name' => 'Debug Snapshot Max Length',
+            'description' => 'Độ dài tối đa của response snapshot được ghi log'
+        ],
         'Default Payment Method' => [
             'type' => self::CONFIG_FIELD_INPUT,
             'value' => '',
@@ -919,17 +931,20 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
                     continue;
                 }
 
+                $this->logDebugSnapshot($context, $query, $status, $response, false);
                 $this->handleApiFailure($response, 'HTTP '.$status.' returned from '.$path);
                 $this->logModuleFailure('API request failed', $context, 'HTTP '.$status, $response);
                 return false;
             }
 
             if (is_array($response) && isset($response['success']) && !$response['success']) {
+                $this->logDebugSnapshot($context, $query, $status, $response, false);
                 $this->handleApiFailure($response, 'API returned unsuccessful response');
                 $this->logModuleFailure('API request failed', $context, 'API returned unsuccessful response', $response);
                 return false;
             }
 
+            $this->logDebugSnapshot($context, $query, $status, $response, true);
             return $response;
         }
 
@@ -1343,6 +1358,51 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         ], true);
 
         return false;
+    }
+
+    protected function logDebugSnapshot(array $context, array $query, $status, $response, $success)
+    {
+        if (!$this->toBoolValue($this->config('Debug Snapshots'))) {
+            return;
+        }
+
+        $change = [
+            ['name' => 'method', 'from' => '', 'to' => isset($context['method']) ? $context['method'] : ''],
+            ['name' => 'path', 'from' => '', 'to' => isset($context['path']) ? $context['path'] : ''],
+            ['name' => 'status', 'from' => '', 'to' => (string) $status],
+            ['name' => 'query', 'from' => '', 'to' => $this->truncateDebugValue($query)],
+            ['name' => 'response', 'from' => '', 'to' => $this->truncateDebugValue($response)],
+        ];
+
+        $this->logModuleAction('API debug snapshot', (bool) $success, $change, !$success);
+    }
+
+    protected function truncateDebugValue($value)
+    {
+        if (is_array($value)) {
+            $value = json_encode($value);
+        } elseif (is_bool($value)) {
+            $value = $value ? 'true' : 'false';
+        } elseif (null === $value) {
+            $value = 'null';
+        } else {
+            $value = (string) $value;
+        }
+
+        $maxLength = max(100, (int) $this->config('Debug Snapshot Max Length'));
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            if (mb_strlen($value) <= $maxLength) {
+                return $value;
+            }
+
+            return mb_substr($value, 0, $maxLength).'...';
+        }
+
+        if (strlen($value) <= $maxLength) {
+            return $value;
+        }
+
+        return substr($value, 0, $maxLength).'...';
     }
 
     protected function isRetryableCurlError($errno)

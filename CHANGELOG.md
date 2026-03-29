@@ -2,6 +2,16 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.6.1] - 2026-03-29
+
+### Added
+- Added optional debug snapshot logging for request/response data
+- Added `Debug Snapshots` configuration
+- Added `Debug Snapshot Max Length` configuration
+
+### Changed
+- API request flow can now record trimmed response snapshots for staging diagnostics
+
 ## [1.6.0] - 2026-03-29
 
 ### Added

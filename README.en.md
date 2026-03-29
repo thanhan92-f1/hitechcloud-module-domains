@@ -94,6 +94,8 @@ The module currently supports the following settings:
 - `Retry Count`: additional retries for transient failures
 - `Retry Delay`: delay between retries in milliseconds
 - If the API returns `Retry-After`, the module will prefer that delay for retryable responses
+- `Debug Snapshots`: enable trimmed request/response snapshot logging for staging
+- `Debug Snapshot Max Length`: maximum logged snapshot length
 - `Default Payment Method`: required for register/transfer/renew order flow
 - `Auto Login`: automatically login when no token is available
 
@@ -211,6 +213,7 @@ Best-effort supported fields:
 - No dedicated premium-domain endpoint was found in the Postman collection, so premium support currently depends on lookup response fields if the backend returns them
 - Retry currently applies only to transient request-layer failures such as timeouts, `408`, `429`, `500`, `502`, `503`, and `504`
 - If the backend returns a `Retry-After` header, that value is used before the configured `Retry Delay`
+- Debug snapshots should be enabled only in staging/debug because they may increase log volume
 - `Register()`, `Transfer()`, and `Renew()` currently rely on user/order API flow rather than confirmed registrar-side provisioning flow
 - `hideContacts()` and `hideNameServers()` currently return `false`
 - Glue record support is still not implemented

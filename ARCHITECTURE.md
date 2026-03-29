@@ -123,6 +123,7 @@ Nhiệm vụ:
 - Tập trung toàn bộ HTTP logic tại một chỗ
 - Dễ mở rộng logging/retry sau này
 - Dễ chuẩn hóa error handling
+- Có thể bật debug snapshot rút gọn để quan sát request/response khi test staging
 
 ### Hạn chế
 - Chưa có structured logging chi tiết
