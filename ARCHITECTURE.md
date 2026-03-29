@@ -33,6 +33,7 @@ Implements:
 - `DomainBulkLookupInterface`
 - `DomainSuggestionsInterface`
 - `DomainHideFormInterface`
+- `DomainPremiumInterface`
 - `DomainModuleNameservers`
 - `DomainModuleAuth`
 - `DomainModuleLock`
@@ -120,9 +121,14 @@ Nhiệm vụ:
 - Dễ chuẩn hóa error handling
 
 ### Hạn chế
-- Chưa có retry logic
 - Chưa có structured logging chi tiết
 - Chưa có body POST kiểu JSON, hiện chủ yếu gửi qua query string theo Postman hiện có
+
+### Retry/backoff hiện có
+- Có retry cấu hình được qua `Retry Count`
+- Có delay giữa các lần retry qua `Retry Delay`
+- Retry áp dụng cho lỗi tạm thời như timeout, `408`, `429`, `500`, `502`, `503`, `504`
+- Chưa parse `Retry-After` header từ backend
 
 ## 6. Authentication layer
 

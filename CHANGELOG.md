@@ -2,6 +2,18 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.4.0] - 2026-03-29
+
+### Added
+- Added configurable retry handling in the shared request layer
+- Added `Retry Count` configuration
+- Added `Retry Delay` configuration
+- Added retry logging for transient HTTP/cURL failures
+
+### Changed
+- Updated module version from `1.3.0` to `1.4.0`
+- Added linear backoff for retryable timeout and gateway-related failures
+
 ## [1.3.0] - 2026-03-29
 
 ### Added

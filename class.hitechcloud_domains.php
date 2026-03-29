@@ -3,7 +3,7 @@
 class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.3.0';
+    protected $version = '1.4.0';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -53,6 +53,18 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             'value' => '60',
             'name' => 'Timeout',
             'description' => 'HTTP timeout (giây)'
+        ],
+        'Retry Count' => [
+            'type' => self::CONFIG_FIELD_INPUT,
+            'value' => '2',
+            'name' => 'Retry Count',
+            'description' => 'Số lần retry thêm cho lỗi tạm thời như timeout, 429, 502, 503, 504'
+        ],
+        'Retry Delay' => [
+            'type' => self::CONFIG_FIELD_INPUT,
+            'value' => '500',
+            'name' => 'Retry Delay',
+            'description' => 'Thời gian chờ giữa các lần retry (milliseconds)'
         ],
         'Default Payment Method' => [
             'type' => self::CONFIG_FIELD_INPUT,
@@ -807,13 +819,6 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             $url .= $separator.$this->buildQuery($query);
         }
 
-        $ch = curl_init();
-        if (false === $ch) {
-            $this->addError('Unable to initialize cURL');
-            $this->logModuleFailure('API request failed', $context, 'Unable to initialize cURL');
-            return false;
-        }
-
         $defaultHeaders = ['Accept: application/json'];
         $token = $this->getAccessToken();
         if ($auth && $token && $this->toBoolValue($this->config('Use Bearer Token'))) {
@@ -824,48 +829,81 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             $defaultHeaders[] = $header;
         }
 
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => strtoupper($method),
-            CURLOPT_HTTPHEADER => $defaultHeaders,
-            CURLOPT_TIMEOUT => max(5, (int) $this->config('Timeout')),
-            CURLOPT_SSL_VERIFYPEER => $this->toBoolValue($this->config('Verify SSL')),
-            CURLOPT_SSL_VERIFYHOST => $this->toBoolValue($this->config('Verify SSL')) ? 2 : 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HEADER => true,
-        ]);
+        $attempt = 0;
+        $maxRetries = max(0, (int) $this->config('Retry Count'));
+        $maxAttempts = $maxRetries + 1;
 
-        $raw = curl_exec($ch);
-        if (false === $raw) {
-            $errorMessage = 'HTTP request failed: '.curl_error($ch);
-            $this->addError($errorMessage);
+        while ($attempt < $maxAttempts) {
+            ++$attempt;
+
+            $ch = curl_init();
+            if (false === $ch) {
+                $this->addError('Unable to initialize cURL');
+                $this->logModuleFailure('API request failed', $context, 'Unable to initialize cURL');
+                return false;
+            }
+
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => strtoupper($method),
+                CURLOPT_HTTPHEADER => $defaultHeaders,
+                CURLOPT_TIMEOUT => max(5, (int) $this->config('Timeout')),
+                CURLOPT_SSL_VERIFYPEER => $this->toBoolValue($this->config('Verify SSL')),
+                CURLOPT_SSL_VERIFYHOST => $this->toBoolValue($this->config('Verify SSL')) ? 2 : 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HEADER => true,
+            ]);
+
+            $raw = curl_exec($ch);
+            if (false === $raw) {
+                $curlErrorNo = (int) curl_errno($ch);
+                $errorMessage = 'HTTP request failed: '.curl_error($ch);
+                curl_close($ch);
+
+                if ($attempt < $maxAttempts && $this->isRetryableCurlError($curlErrorNo)) {
+                    $this->logRetryAttempt($context, $attempt, $maxAttempts, $errorMessage);
+                    $this->sleepBeforeRetry($attempt);
+                    continue;
+                }
+
+                $this->addError($errorMessage);
+                $this->logModuleFailure('API request failed', $context, $errorMessage);
+                return false;
+            }
+
+            $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             curl_close($ch);
-            $this->logModuleFailure('API request failed', $context, $errorMessage);
-            return false;
+
+            $body = substr($raw, $headerSize);
+            $decoded = json_decode($body, true);
+            $response = JSON_ERROR_NONE === json_last_error() ? $decoded : trim($body);
+
+            if ($status >= 400) {
+                if ($attempt < $maxAttempts && $this->isRetryableHttpStatus($status)) {
+                    $this->logRetryAttempt($context, $attempt, $maxAttempts, 'HTTP '.$status);
+                    $this->sleepBeforeRetry($attempt);
+                    continue;
+                }
+
+                $this->handleApiFailure($response, 'HTTP '.$status.' returned from '.$path);
+                $this->logModuleFailure('API request failed', $context, 'HTTP '.$status, $response);
+                return false;
+            }
+
+            if (is_array($response) && isset($response['success']) && !$response['success']) {
+                $this->handleApiFailure($response, 'API returned unsuccessful response');
+                $this->logModuleFailure('API request failed', $context, 'API returned unsuccessful response', $response);
+                return false;
+            }
+
+            return $response;
         }
 
-        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        curl_close($ch);
-
-        $body = substr($raw, $headerSize);
-        $decoded = json_decode($body, true);
-        $response = JSON_ERROR_NONE === json_last_error() ? $decoded : trim($body);
-
-        if ($status >= 400) {
-            $this->handleApiFailure($response, 'HTTP '.$status.' returned from '.$path);
-            $this->logModuleFailure('API request failed', $context, 'HTTP '.$status, $response);
-            return false;
-        }
-
-        if (is_array($response) && isset($response['success']) && !$response['success']) {
-            $this->handleApiFailure($response, 'API returned unsuccessful response');
-            $this->logModuleFailure('API request failed', $context, 'API returned unsuccessful response', $response);
-            return false;
-        }
-
-        return $response;
+        $this->addError('API request failed after retries');
+        $this->logModuleFailure('API request failed', $context, 'API request failed after retries');
+        return false;
     }
 
     protected function ensureAuthenticated()
@@ -1191,6 +1229,44 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return isset($response[0]) ? array_values($response) : [$response];
+    }
+
+    protected function isRetryableCurlError($errno)
+    {
+        return in_array((int) $errno, [
+            CURLE_OPERATION_TIMEDOUT,
+            CURLE_COULDNT_RESOLVE_HOST,
+            CURLE_COULDNT_CONNECT,
+            CURLE_SEND_ERROR,
+            CURLE_RECV_ERROR,
+        ], true);
+    }
+
+    protected function isRetryableHttpStatus($status)
+    {
+        return in_array((int) $status, [408, 429, 500, 502, 503, 504], true);
+    }
+
+    protected function sleepBeforeRetry($attempt)
+    {
+        $baseDelayMs = max(0, (int) $this->config('Retry Delay'));
+        if ($baseDelayMs <= 0) {
+            return;
+        }
+
+        $delayMs = $baseDelayMs * max(1, (int) $attempt);
+        usleep($delayMs * 1000);
+    }
+
+    protected function logRetryAttempt(array $context, $attempt, $maxAttempts, $reason)
+    {
+        $this->logModuleAction('API retry attempt', false, [
+            ['name' => 'method', 'from' => '', 'to' => isset($context['method']) ? $context['method'] : ''],
+            ['name' => 'path', 'from' => '', 'to' => isset($context['path']) ? $context['path'] : ''],
+            ['name' => 'attempt', 'from' => '', 'to' => (string) $attempt],
+            ['name' => 'max_attempts', 'from' => '', 'to' => (string) $maxAttempts],
+            ['name' => 'reason', 'from' => '', 'to' => (string) $reason],
+        ], false);
     }
 
     protected function extractPremiumData($response)

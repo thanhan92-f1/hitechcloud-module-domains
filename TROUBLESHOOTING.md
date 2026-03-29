@@ -49,9 +49,20 @@ Tài liệu xử lý sự cố thường gặp cho module `hitechcloud_domains`.
 
 ### Cách xử lý
 - Tăng `Timeout`
+- Tăng `Retry Count` nếu API backend thỉnh thoảng trả lỗi tạm thời
+- Tăng `Retry Delay` nếu cần giãn thời gian giữa các lần gọi lại
 - Nếu đang test nội bộ, tạm kiểm tra với `Verify SSL` tắt
 - Kiểm tra server có outbound access tới API không
 - Test endpoint trực tiếp ngoài HostBill
+
+### Các lỗi hiện có retry tự động
+- cURL timeout / connect / resolve / send / receive error
+- HTTP `408`
+- HTTP `429`
+- HTTP `500`
+- HTTP `502`
+- HTTP `503`
+- HTTP `504`
 
 ## 4. Không resolve được remote domain ID
 

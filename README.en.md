@@ -83,6 +83,8 @@ The module currently supports the following settings:
 - `Use Bearer Token`: enable/disable Bearer token header
 - `Verify SSL`: enable/disable SSL verification
 - `Timeout`: HTTP timeout in seconds
+- `Retry Count`: additional retries for transient failures
+- `Retry Delay`: delay between retries in milliseconds
 - `Default Payment Method`: required for register/transfer/renew order flow
 - `Auto Login`: automatically login when no token is available
 
@@ -195,6 +197,7 @@ Best-effort supported fields:
 - No clear glue record / child nameserver endpoints were found in the provided API docs, so `DomainModuleGluerecords` is not implemented yet
 - DNSSEC normalization is best-effort because the Postman collection does not provide a complete response schema
 - No dedicated premium-domain endpoint was found in the Postman collection, so premium support currently depends on lookup response fields if the backend returns them
+- Retry currently applies only to transient request-layer failures such as timeouts, `429`, `502`, `503`, and `504`
 - `Register()`, `Transfer()`, and `Renew()` currently rely on user/order API flow rather than confirmed registrar-side provisioning flow
 - `hideContacts()` and `hideNameServers()` currently return `false`
 - Domain price import (`DomainPriceImport`) is not implemented
