@@ -158,5 +158,7 @@ Nên test theo thứ tự:
 - `ARCHITECTURE.md`: mô tả kiến trúc hiện tại
 - `TROUBLESHOOTING.md`: hướng dẫn debug lỗi thường gặp
 - `ROADMAP.md`: định hướng mở rộng tiếp theo
+- `TEST-PLAN.md`: kế hoạch kiểm thử
+- `HANDOVER.md`: tài liệu bàn giao nội bộ
 - `CHANGELOG.md`: lịch sử thay đổi
 - `LICENSE`: license nội bộ của công ty

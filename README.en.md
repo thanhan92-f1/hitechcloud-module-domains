@@ -13,6 +13,8 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 - `ARCHITECTURE.md`: module architecture notes
 - `TROUBLESHOOTING.md`: troubleshooting guide
 - `ROADMAP.md`: proposed development roadmap
+- `TEST-PLAN.md`: test planning document
+- `HANDOVER.md`: internal handover notes
 - `CHANGELOG.md`: change history
 - `LICENSE`: copyright / usage information
 
