@@ -155,5 +155,8 @@ Nên test theo thứ tự:
 - `README.en.md`: tổng quan tiếng Anh
 - `DEPLOYMENT-CHECKLIST.md`: checklist triển khai
 - `EXAMPLES.md`: ví dụ payload và flow xử lý
+- `ARCHITECTURE.md`: mô tả kiến trúc hiện tại
+- `TROUBLESHOOTING.md`: hướng dẫn debug lỗi thường gặp
+- `ROADMAP.md`: định hướng mở rộng tiếp theo
 - `CHANGELOG.md`: lịch sử thay đổi
 - `LICENSE`: license nội bộ của công ty

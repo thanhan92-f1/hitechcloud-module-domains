@@ -10,6 +10,9 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 - `ADMIN-GUIDE.md`: admin configuration guide
 - `DEPLOYMENT-CHECKLIST.md`: deployment checklist
 - `EXAMPLES.md`: usage and payload examples
+- `ARCHITECTURE.md`: module architecture notes
+- `TROUBLESHOOTING.md`: troubleshooting guide
+- `ROADMAP.md`: proposed development roadmap
 - `CHANGELOG.md`: change history
 - `LICENSE`: copyright / usage information
 
