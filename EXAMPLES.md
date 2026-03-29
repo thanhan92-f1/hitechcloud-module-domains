@@ -148,6 +148,13 @@ Nếu API chỉ trả WHOIS text, module vẫn cố parse các dòng phổ biế
 ]
 ```
 
+### Also accepted response shapes
+```php
+['ns1' => 'ns1.example.com', 'ns2' => 'ns2.example.com']
+['data' => ['nameservers' => ['ns1.example.com', 'ns2.example.com']]]
+"ns1.example.com,ns2.example.com"
+```
+
 ## 8. Update nameservers
 
 ### Method
@@ -155,6 +162,20 @@ Nếu API chỉ trả WHOIS text, module vẫn cố parse các dòng phổ biế
 
 ### API mapping
 - `PUT /domain/:id/ns?nameservers=ns1.example.com,ns2.example.com`
+
+## 8.1 Boolean management lookups
+
+Các method sau giờ đọc tốt hơn response dạng nested:
+- `getRegistrarLock()`
+- `getIDProtection()`
+- `getRegistryAutorenew()`
+
+### Example accepted response shapes
+```php
+['locked' => true]
+['data' => ['lock' => 'enabled']]
+['details' => ['auto_renew' => 1]]
+```
 
 ## 9. Get EPP code
 

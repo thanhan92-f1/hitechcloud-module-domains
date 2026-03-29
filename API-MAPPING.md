@@ -82,6 +82,7 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 ### `getNameServers()`
 - ưu tiên cache/details nếu có
 - endpoint fallback: `GET /domain/:id/ns`
+- normalize thêm response dạng string, keyed array (`ns1`, `ns2`), nested `data/details`, hoặc row object có `host|hostname|name|nameserver|value`
 
 ### `updateNameServers()`
 - endpoint: `PUT /domain/:id/ns`
@@ -102,6 +103,7 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 ### `getRegistrarLock()`
 - ưu tiên cache/details nếu có
 - endpoint fallback: `GET /domain/:id/reglock`
+- normalize boolean best-effort từ root, `data.*`, hoặc `details.*`
 
 ### `updateRegistrarLock()`
 - endpoint: `PUT /domain/:id/reglock`
@@ -111,6 +113,7 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 - ưu tiên local extended
 - ưu tiên cache/details nếu có
 - endpoint fallback: `GET /domain/:id/idprotection`
+- normalize boolean best-effort từ root, `data.*`, hoặc `details.*`
 
 ### `updateIDProtection()`
 - endpoint: `PUT /domain/:id/idprotection`
@@ -132,6 +135,7 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 ### `getRegistryAutorenew()`
 - ưu tiên cache/details nếu có
 - endpoint fallback: `GET /domain/:id/autorenew`
+- normalize boolean best-effort từ root, `data.*`, hoặc `details.*`
 
 ### `updateRegistryAutorenew()`
 - endpoint: `PUT /domain/:id/autorenew`

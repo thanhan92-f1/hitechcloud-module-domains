@@ -2,6 +2,17 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.6.8] - 2026-03-29
+
+### Added
+- Added nameserver list normalization for array, keyed, nested, and raw string responses
+- Added shared boolean response normalization for lock, privacy, and autorenew lookups across nested API schemas
+
+### Changed
+- Improved `getNameServers()` to return a cleaner sorted unique list from more response formats
+- Improved `getRegistrarLock()`, `getIDProtection()`, and `getRegistryAutorenew()` to better read nested `data` and `details` payloads
+- Updated module version from `1.6.7` to `1.6.8`
+
 ## [1.6.7] - 2026-03-29
 
 ### Added

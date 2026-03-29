@@ -3,7 +3,7 @@
 class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleGluerecords, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing, DomainPriceImport
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.6.7';
+    protected $version = '1.6.8';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -334,7 +334,15 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return false;
         }
 
-        return $this->toBoolValue($this->extractFirstValue($response, ['reglock', 'lock', 'locked', 'status']));
+        return $this->normalizeBooleanResponse($response, [
+            ['reglock', 'lock', 'locked', 'status', 'enabled'],
+            ['data', 'reglock'],
+            ['data', 'lock'],
+            ['data', 'locked'],
+            ['details', 'reglock'],
+            ['details', 'lock'],
+            ['details', 'locked'],
+        ]);
     }
 
     public function updateRegistrarLock()
@@ -376,7 +384,13 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
                 $response = $this->request('GET', '/domain/'.$domainId.'/idprotection');
             }
             if ($response !== false) {
-                return $this->toBoolValue($this->extractFirstValue($response, ['idprotection', 'privacy', 'status', 'enabled']));
+                return $this->normalizeBooleanResponse($response, [
+                    ['idprotection', 'privacy', 'status', 'enabled'],
+                    ['data', 'idprotection'],
+                    ['data', 'privacy'],
+                    ['details', 'idprotection'],
+                    ['details', 'privacy'],
+                ]);
             }
         }
 
@@ -472,7 +486,13 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
             return false;
         }
 
-        return $this->toBoolValue($this->extractFirstValue($response, ['autorenew', 'auto_renew', 'renew']));
+        return $this->normalizeBooleanResponse($response, [
+            ['autorenew', 'auto_renew', 'renew', 'enabled', 'status'],
+            ['data', 'autorenew'],
+            ['data', 'auto_renew'],
+            ['details', 'autorenew'],
+            ['details', 'auto_renew'],
+        ]);
     }
 
     public function updateRegistryAutorenew()
@@ -1178,17 +1198,65 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
 
     protected function extractNameservers($response)
     {
-        if (isset($response['nameservers']) && is_array($response['nameservers'])) {
-            return $response['nameservers'];
-        }
-        if (isset($response['nameServer']) && is_array($response['nameServer'])) {
-            return $response['nameServer'];
-        }
-        if (isset($response['ns']) && is_array($response['ns'])) {
-            return $response['ns'];
+        if (is_string($response)) {
+            return $this->normalizeNameserverList($response);
         }
 
-        return is_array($response) ? $response : [];
+        if (!is_array($response)) {
+            return [];
+        }
+
+        foreach (['nameservers', 'nameServer', 'name_servers', 'ns', 'data', 'details'] as $key) {
+            if (isset($response[$key])) {
+                $nameservers = $this->normalizeNameserverList($response[$key]);
+                if (!empty($nameservers)) {
+                    return $nameservers;
+                }
+            }
+        }
+
+        return $this->normalizeNameserverList($response);
+    }
+
+    protected function normalizeNameserverList($nameservers)
+    {
+        if (is_string($nameservers)) {
+            $nameservers = preg_split('/[\r\n,;]+/', $nameservers, -1, PREG_SPLIT_NO_EMPTY);
+        }
+
+        if (!is_array($nameservers)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($nameservers as $key => $value) {
+            if (is_string($key) && preg_match('/^ns[1-9]$/i', $key)) {
+                $value = $nameservers[$key];
+            }
+
+            if (is_array($value)) {
+                $value = $this->coalesceFirstValue($value, [
+                    ['host'],
+                    ['hostname'],
+                    ['name'],
+                    ['nameserver'],
+                    ['value'],
+                ]);
+            }
+
+            $value = strtolower(trim((string) $value));
+            if ($value === '') {
+                continue;
+            }
+
+            $parts = preg_split('/\s+/', $value);
+            $result[] = $parts[0];
+        }
+
+        $result = array_values(array_unique(array_filter($result)));
+        sort($result, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $result;
     }
 
     protected function normalizeWhoisResponse($response, $domainName = '')
@@ -1455,6 +1523,24 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return $value;
+    }
+
+    protected function normalizeBooleanResponse($response, array $paths)
+    {
+        if (is_bool($response)) {
+            return $response;
+        }
+
+        if (is_numeric($response) || is_string($response)) {
+            return $this->toBoolValue($response);
+        }
+
+        $candidate = $this->coalesceFirstValue($response, $paths);
+        if (null !== $candidate) {
+            return $this->toBoolValue($candidate);
+        }
+
+        return false;
     }
 
     protected function extractFirstValue($response, array $keys)

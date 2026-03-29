@@ -40,6 +40,7 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 - Nameservers:
   - `getNameServers()`
   - `updateNameServers()`
+  - `getNameServers()` additionally normalizes string responses, keyed arrays such as `ns1`/`ns2`, and nested `data/details` payloads
 - Glue records / child nameservers:
   - `getRegisterNameServers()`
   - `registerNameServer()`
@@ -51,9 +52,11 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 - Registrar lock:
   - `getRegistrarLock()`
   - `updateRegistrarLock()`
+  - better reads boolean responses from nested `data` or `details` payloads
 - ID protection / privacy:
   - `getIDProtection()`
   - `updateIDProtection()`
+  - better reads boolean responses from nested `data` or `details` payloads
 - Contact information:
   - `getContactInfo()`
   - `updateContactInfo()`
@@ -61,6 +64,7 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
 - Registry auto-renew:
   - `getRegistryAutorenew()`
   - `updateRegistryAutorenew()`
+  - better reads boolean responses from nested `data` or `details` payloads
 - Email forwarding:
   - `getEmailForwarding()`
   - `updateEmailForwarding()`

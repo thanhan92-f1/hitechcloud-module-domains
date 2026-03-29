@@ -40,6 +40,7 @@ Module domain cho HostBill, tích hợp với **HiTechCloud User API** dựa tr�
 - Quản lý nameserver:
   - `getNameServers()`
   - `updateNameServers()`
+  - `getNameServers()` normalize thêm response dạng string, mảng keyed (`ns1`, `ns2`) hoặc nested `data/details`
 - Glue records / child nameserver:
   - `getRegisterNameServers()`
   - `registerNameServer()`
@@ -50,9 +51,11 @@ Module domain cho HostBill, tích hợp với **HiTechCloud User API** dựa tr�
 - Registrar lock:
   - `getRegistrarLock()`
   - `updateRegistrarLock()`
+  - đọc tốt hơn các response boolean nằm trong `data` hoặc `details`
 - ID Protection / Privacy:
   - `getIDProtection()`
   - `updateIDProtection()`
+  - đọc tốt hơn các response boolean nằm trong `data` hoặc `details`
 - Contact info:
   - `getContactInfo()`
   - `updateContactInfo()`
@@ -60,6 +63,7 @@ Module domain cho HostBill, tích hợp với **HiTechCloud User API** dựa tr�
 - Registry auto renew:
   - `getRegistryAutorenew()`
   - `updateRegistryAutorenew()`
+  - đọc tốt hơn các response boolean nằm trong `data` hoặc `details`
 - Email forwarding:
   - `getEmailForwarding()`
   - `updateEmailForwarding()`
