@@ -1,9 +1,9 @@
 <?php
 
-class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing, DomainPriceImport
+class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleGluerecords, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing, DomainPriceImport
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.5.0';
+    protected $version = '1.6.0';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -275,6 +275,26 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return is_string($response) ? trim($response) : $response;
+    }
+
+    public function getRegisterNameServers()
+    {
+        return $this->unsupportedGlueRecordsAction('Get registered nameservers');
+    }
+
+    public function deleteNameServer()
+    {
+        return $this->unsupportedGlueRecordsAction('Delete child nameserver');
+    }
+
+    public function modifyNameServer()
+    {
+        return $this->unsupportedGlueRecordsAction('Modify child nameserver');
+    }
+
+    public function registerNameServer()
+    {
+        return $this->unsupportedGlueRecordsAction('Register child nameserver');
     }
 
     public function getRegistrarLock()
@@ -1312,6 +1332,17 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return trim((string) $value);
+    }
+
+    protected function unsupportedGlueRecordsAction($action)
+    {
+        $message = 'Glue records are not supported because no matching HiTechCloud API endpoint is documented';
+        $this->addError($message);
+        $this->logModuleAction($action, false, [
+            ['name' => 'reason', 'from' => '', 'to' => $message],
+        ], true);
+
+        return false;
     }
 
     protected function isRetryableCurlError($errno)

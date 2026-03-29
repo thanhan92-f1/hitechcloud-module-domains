@@ -36,6 +36,7 @@ Implements:
 - `DomainPremiumInterface`
 - `DomainPriceImport`
 - `DomainModuleNameservers`
+- `DomainModuleGluerecords`
 - `DomainModuleAuth`
 - `DomainModuleLock`
 - `DomainModulePrivacy`
@@ -90,6 +91,7 @@ Các method:
 ### 4.3 Domain management
 Bao gồm:
 - nameservers
+- glue records / child nameservers (stub)
 - EPP code
 - registrar lock
 - ID protection

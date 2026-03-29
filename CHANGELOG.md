@@ -2,6 +2,15 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.6.0] - 2026-03-29
+
+### Added
+- Added `DomainModuleGluerecords` support as safe unsupported stubs
+- Added controlled error/logging for glue-record actions when no API endpoint is available
+
+### Changed
+- Updated module version from `1.5.0` to `1.6.0`
+
 ## [1.5.0] - 2026-03-29
 
 ### Added

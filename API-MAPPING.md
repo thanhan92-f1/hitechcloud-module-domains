@@ -73,6 +73,13 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 - endpoint: `PUT /domain/:id/ns`
 - query: `nameservers=ns1,ns2,...`
 
+### Glue records / child nameservers
+- `getRegisterNameServers()`
+- `registerNameServer()`
+- `modifyNameServer()`
+- `deleteNameServer()`
+- hiện chưa map tới endpoint nào vì Postman chưa có API glue records
+
 ## 6. EPP / Lock / Privacy
 
 ### `getEppCode()`
@@ -196,4 +203,5 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 
 - Nhiều endpoint đang được dùng theo kiểu best-effort dựa trên Postman hiện có
 - `Register()`, `Transfer()`, `Renew()` chưa chắc là registrar provisioning flow thật
+- Glue record methods hiện log lỗi có kiểm soát và trả `false`
 - Nếu API chính thức thay đổi schema, cần cập nhật lại các method normalize/parsing
