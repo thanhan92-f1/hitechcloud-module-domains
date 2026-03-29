@@ -64,6 +64,8 @@ A HostBill domain module integrated with **HiTechCloud User API**, based on the 
   - `widget_dnssec_set($data)`
 - Domain listing:
   - `ListDomains()`
+- Domain price import:
+  - `getDomainPrices()`
 - Connection test:
   - `testConnection()`
 
@@ -140,6 +142,9 @@ If `Use Bearer Token` is enabled, requests include:
 ### Order flow
 - `POST /domain/order`
 
+### Price import
+- `GET /domain/order`
+
 ## Installation
 
 1. Place the module folder in the proper HostBill domain module directory.
@@ -202,8 +207,8 @@ Best-effort supported fields:
 - If the backend returns a `Retry-After` header, that value is used before the configured `Retry Delay`
 - `Register()`, `Transfer()`, and `Renew()` currently rely on user/order API flow rather than confirmed registrar-side provisioning flow
 - `hideContacts()` and `hideNameServers()` currently return `false`
-- Domain price import (`DomainPriceImport`) is not implemented
 - Glue record support is still not implemented
+- Price import is currently best-effort from the TLD listing returned by `GET /domain/order`
 
 ## Suggested Next Improvements
 

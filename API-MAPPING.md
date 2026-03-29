@@ -24,6 +24,10 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 ### `Renew()`
 - endpoint: `POST /domain/:id/renew`
 
+### `getDomainPrices()`
+- endpoint: `GET /domain/order`
+- dùng để lấy danh sách TLD và periods phục vụ import giá best-effort
+
 ## 3. Lookup / Whois
 
 ### `lookupDomain($sld, $tld)`
@@ -178,7 +182,17 @@ Tài liệu mapping giữa method trong module `HiTechCloud_Domains` và các en
 - DNS
 - DNSSEC
 
-## 14. Lưu ý
+## 14. Price import notes
+
+- Dữ liệu giá hiện được suy ra từ danh sách `tlds[].periods[]`
+- Các key đang map best-effort:
+  - `register`
+  - `transfer`
+  - `renew`
+  - `currency`
+- Nếu backend không trả `renew`, giá renew sẽ để `null`
+
+## 15. Lưu ý
 
 - Nhiều endpoint đang được dùng theo kiểu best-effort dựa trên Postman hiện có
 - `Register()`, `Transfer()`, `Renew()` chưa chắc là registrar provisioning flow thật

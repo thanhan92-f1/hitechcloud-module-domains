@@ -2,6 +2,15 @@
 
 All notable changes to this module should be documented in this file.
 
+## [1.5.0] - 2026-03-29
+
+### Added
+- Added best-effort `DomainPriceImport` support via `getDomainPrices()`
+- Added TLD/period pricing normalization from `GET /domain/order`
+
+### Changed
+- Updated module version from `1.4.0` to `1.5.0`
+
 ## [1.4.1] - 2026-03-29
 
 ### Added

@@ -1,9 +1,9 @@
 <?php
 
-class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing
+class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface, DomainWhoisInterface, DomainBulkLookupInterface, DomainSuggestionsInterface, DomainHideFormInterface, DomainPremiumInterface, DomainModuleNameservers, DomainModuleAuth, DomainModuleLock, DomainModulePrivacy, DomainModuleContacts, DomainModuleRegistryAutorenew, DomainModuleForwarding, DomainModuleDNS, DomainModuleDNSSEC, DomainModuleListing, DomainPriceImport
 {
     protected $moduleName = 'HiTechCloud_Domains';
-    protected $version = '1.4.0';
+    protected $version = '1.5.0';
     protected $description = 'HiTechCloud domain integration for HostBill based on available User API endpoints.';
     protected $configuration = [
         'API URL' => [
@@ -578,6 +578,16 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return $response;
+    }
+
+    public function getDomainPrices()
+    {
+        $response = $this->request('GET', '/domain/order');
+        if ($response === false) {
+            return false;
+        }
+
+        return $this->normalizeDomainPrices($response);
     }
 
     public function testConnection()
@@ -1231,6 +1241,77 @@ class HiTechCloud_Domains extends DomainModule implements DomainLookupInterface,
         }
 
         return isset($response[0]) ? array_values($response) : [$response];
+    }
+
+    protected function normalizeDomainPrices($response)
+    {
+        if (!is_array($response)) {
+            return [];
+        }
+
+        $tlds = [];
+        foreach (['tlds', 'items', 'data', 'details'] as $key) {
+            if (isset($response[$key]) && is_array($response[$key])) {
+                $tlds = $response[$key];
+                break;
+            }
+        }
+
+        if (empty($tlds) && isset($response[0]) && is_array($response[0])) {
+            $tlds = $response;
+        }
+
+        $result = [];
+        foreach ($tlds as $tldData) {
+            if (!is_array($tldData) || empty($tldData['tld'])) {
+                continue;
+            }
+
+            $tld = ltrim((string) $tldData['tld'], '.');
+            $periods = [];
+            if (isset($tldData['periods']) && is_array($tldData['periods'])) {
+                foreach ($tldData['periods'] as $periodData) {
+                    if (!is_array($periodData)) {
+                        continue;
+                    }
+
+                    $period = isset($periodData['period']) ? (string) $periodData['period'] : '';
+                    if ($period === '') {
+                        continue;
+                    }
+
+                    $periods[$period] = [
+                        'register' => $this->normalizePriceValue($this->extractFirstValue($periodData, ['register', 'registration', 'register_price'])),
+                        'transfer' => $this->normalizePriceValue($this->extractFirstValue($periodData, ['transfer', 'transfer_price'])),
+                        'renew' => $this->normalizePriceValue($this->extractFirstValue($periodData, ['renew', 'renewal', 'renew_price'])),
+                        'currency' => $this->extractFirstValue($periodData, ['currency', 'currency_code']),
+                    ];
+                }
+            }
+
+            $result[$tld] = [
+                'id' => isset($tldData['id']) ? (string) $tldData['id'] : '',
+                'tld' => '.'.$tld,
+                'periods' => $periods,
+                'currency' => $this->extractFirstValue($tldData, ['currency', 'currency_code']),
+                'raw' => $tldData,
+            ];
+        }
+
+        return $result;
+    }
+
+    protected function normalizePriceValue($value)
+    {
+        if (null === $value || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return number_format((float) $value, 2, '.', '');
+        }
+
+        return trim((string) $value);
     }
 
     protected function isRetryableCurlError($errno)

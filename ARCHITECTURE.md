@@ -34,6 +34,7 @@ Implements:
 - `DomainSuggestionsInterface`
 - `DomainHideFormInterface`
 - `DomainPremiumInterface`
+- `DomainPriceImport`
 - `DomainModuleNameservers`
 - `DomainModuleAuth`
 - `DomainModuleLock`
@@ -97,6 +98,7 @@ Bao gồm:
 - email forwarding
 - DNS
 - DNSSEC
+- import bảng giá domain
 
 Tất cả đều đi qua lớp request chung.
 
